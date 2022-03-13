@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wangEditor upload-attachment demo</title>
+  <link href="https://cdn.bootcdn.net/ajax/libs/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@latest/dist/css/style.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="./is-hotkey.js "></script>
+  <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@latest"></script>
+  <script src="./core.js"></script> <!--without Jquery it results r.css undefined-->
+  <script src="https://cdn.jsdelivr.net/npm/@wangeditor/plugin-upload-attachment@latest"></script>
+  <style>
+    textarea {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+  <p>wangEditor upload-attachment demo</p>
+
+  <div>
+    <div id="toolbar-container" style="border: 1px solid #ccc; border-bottom: none;"></div>
+    <div id="editor-container" style="border: 1px solid #ccc; height: 400px;"></div>
+  </div>
+
+  <div style="margin-top: 20px; display: flex;">
+    <div style="flex: 1; padding-right: 5px;">
+      <textarea id="text-html" style="width: 100%; height: 300px;"></textarea>
+    </div>
+    <div style="flex: 1; padding-left: 5px;">
+      <textarea id="text-json" style="width: 100%; height: 300px;"></textarea>
+    </div>
+  </div>
+  <script type="text/javascript">
+    const E = window.wangEditor;
+
+    E.Boot.registerModule(WangEditorPluginUploadAttachment.default);
+
+
+    function loadEditor(textareaHTML, placeholder) {
+      let aux = {
+        editor: null,
+        toolbar: null
+      }
+      let editorConfig = {
+        hoverbarKeys: {
+          attachment: {
+            menuKeys: ['downloadAttachment'],
+          },
+        },
+        MENU_CONF: []
+      };
+
+      let toolbarConfig = {
+        // insert some menus in toolbar
+        insertKeys: {
+          index: 0,
+          keys: ['uploadAttachment'],
+        },
+      }
+
+      editorConfig.placeholder = placeholder;
+      editorConfig.onChange = function (editor) {
+        textareaHTML.value = editor.getHtml();
+      };
+
+      editorConfig.MENU_CONF["uploadAttachment"] = {
+        server: '/api/upload', // 服务端地址
+        timeout: 5 * 1000, // 5s
+
+        fieldName: 'custom-fileName',
+        meta: { token: 'xxx', a: 100 }, // 请求时附加的数据
+        metaWithUrl: true, // meta 拼接到 url 上
+        headers: { Accept: 'text/x-json' },
+
+        maxFileSize: 10 * 1024 * 1024, // 10M
+
+        onBeforeUpload(file) {
+          console.log('onBeforeUpload', file)
+          return file // 上传 file 文件
+          // return false // 会阻止上传
+        },
+        onProgress(progress) {
+          console.log('onProgress', progress)
+        },
+        onSuccess(file, res) {
+          console.log('onSuccess', file, res)
+        },
+        onFailed(file, res) {
+          alert(res.message)
+          console.log('onFailed', file, res)
+        },
+        onError(file, err, res) {
+          alert(err.message)
+          console.error('onError', file, err, res)
+        },
+
+        // // 上传成功后，用户自定义插入文件
+        // customInsert(res: any, file: File, insertFn: Function) {
+        //   console.log('customInsert', res)
+        //   const { url } = res.data || {}
+        //   if (!url) throw new Error(`url is empty`)
+
+        //   // 插入附件到编辑器
+        //   insertFn(`customInsert-${file.name}`, url)
+        // },
+
+        // // 用户自定义上传
+        // customUpload(file: File, insertFn: Function) {
+        //   console.log('customUpload', file)
+
+        //   return new Promise(resolve => {
+        //     // 插入一个文件，模拟异步
+        //     setTimeout(() => {
+        //       const src = `https://www.w3school.com.cn/i/movie.ogg`
+        //       insertFn(`customUpload-${file.name}`, src)
+        //       resolve('ok')
+        //     }, 500)
+        //   })
+        // },
+
+        // // 自定义选择
+        // customBrowseAndUpload(insertFn: Function) {
+        //   alert('自定义选择文件，如弹出图床')
+        //   // 自己上传文件
+        //   // 上传之后用 insertFn(fileName, link) 插入到编辑器
+        // },
+
+        // 插入到编辑器后的回调
+        onInsertedAttachment(elem) {
+          console.log('inserted attachment', elem)
+        },
+      };
+
+
+      aux.editor = E.createEditor({
+        selector: '#editor-container',
+        mode: 'default',
+        config: editorConfig
+      });
+
+      aux.toolbar = E.createToolbar({
+        editor: aux.editor,
+        selector: '#toolbar-container',
+        config: toolbarConfig,
+        mode: 'default'
+      })
+
+      return aux;
+    }
+
+    const {
+            editor,
+            toolbar
+        } = loadEditor(document.querySelector("#text-html"), "Ingresa una breve descripción de la comunicación");
+  </script>
+</body>
+
+</html>
